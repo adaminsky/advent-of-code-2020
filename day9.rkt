@@ -29,7 +29,7 @@
       (for* ([len (in-range 2 (length nums))]
              [indx (in-range (length nums))]
              #:unless (or (> (+ indx len) (length nums))
-                         (> (get-sum nums indx len) target)))
+                          (> (get-sum nums indx len) target)))
         (if (eq? (get-sum nums indx len) target)
             (writeln (+ (apply min (take (drop nums indx) len))
                         (apply max (take (drop nums indx) len))))
