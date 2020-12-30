@@ -59,9 +59,9 @@
                #\L]
               [else (vector-ref (vector-ref cells i) j)])))))
 
-(define (update-fixed-point prev curr)
+(define (update-fixed-point f prev curr)
   (cond [(equal? prev curr) curr]
-        [else (update-fixed-point curr (perform-update curr))]))
+        [else (update-fixed-point f curr (f curr))]))
 
 (define (count-occupied cells)
   (for*/fold ([cnt 0])
@@ -70,9 +70,42 @@
     (cond [(equal? #\# (2dvector-ref cells i j)) (+ cnt 1)]
           [else cnt])))
 
+(define (occupied-in-slope cells x y rise run)
+  (cond [(and (>= (+ x rise) 0) (>= (+ y run) 0)
+              (< (+ x rise) (vector-length cells))
+              (< (+ y run) (vector-length (vector-ref cells 0))))
+         (cond [(equal? #\# (2dvector-ref cells (+ x rise) (+ y run))) 1]
+               [(equal? #\L (2dvector-ref cells (+ x rise) (+ y run))) 0]
+               [else (occupied-in-slope cells (+ x rise) (+ y run) rise run)])]
+        [else 0]))
+
+(define (num-occupied-slope cells i j)
+  (+ (occupied-in-slope cells i j 0 1)
+     (occupied-in-slope cells i j 1 0)
+     (occupied-in-slope cells i j 0 -1)
+     (occupied-in-slope cells i j -1 0)
+     (occupied-in-slope cells i j -1 -1)
+     (occupied-in-slope cells i j -1 1)
+     (occupied-in-slope cells i j 1 -1)
+     (occupied-in-slope cells i j 1 1)))
+
+(define (perform-update2 cells)
+  (let ([h (vector-length cells)]
+        [w (vector-length (vector-ref cells 0))])
+    (for/vector ([i (in-range h)])
+      (for/vector ([j (in-range w)])
+        (cond [(and (equal? #\L (vector-ref (vector-ref cells i) j))
+                    (eq? 0 (num-occupied-slope cells i j)))
+               #\#]
+              [(and (equal? #\# (vector-ref (vector-ref cells i) j))
+                    (>= (num-occupied-slope cells i j) 5))
+               #\L]
+              [else (vector-ref (vector-ref cells i) j)])))))
+
 (call-with-input-file "day11_in.txt"
   (lambda (f)
     (let* ([cells (parse-program f)]
            [h (vector-length cells)]
            [w (vector-length (vector-ref cells 0))])
-      (count-occupied (update-fixed-point '() cells)))))
+      (count-occupied
+       (update-fixed-point perform-update2 '() cells)))))
